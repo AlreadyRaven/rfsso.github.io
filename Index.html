@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RFSSO - RavenFuture Secure Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+        body {
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .login-container {
+            background-color: #ffffff;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 100%;
+        }
+        .logo {
+            width: 100px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 14px;
+            color: #777;
+            margin-bottom: 20px;
+        }
+        input {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+            outline: none;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #333;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        button:hover {
+            background-color: #555;
+        }
+        .error {
+            color: red;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <img src="logo.png" alt="RavenFuture Logo" class="logo">
+        <h1>RFSSO</h1>
+        <p>RavenFuture Secure Login</p>
+        <form id="loginForm">
+            <input type="email" id="username" placeholder="Username" required>
+            <input type="password" id="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+        <p id="errorMessage" class="error"></p>
+    </div>
+
+    <script>
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hash = await crypto.subtle.digest('SHA-256', data);
+            return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function encryptLink(link) {
+            return btoa(link).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+        }
+
+        function decryptLink(encryptedLink) {
+            const urlSafeLink = encryptedLink.replace(/-/g, '+').replace(/_/g, '/');
+            try {
+                return atob(urlSafeLink);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        const validUsername = "admin@ravenfuture.com";
+        const validPasswordHash = "ef28ea2c5e1e99638a221e90c5147e09f382153009a4908db5468704e24ea6b0";
+
+        document.getElementById('loginForm').addEventListener('submit', async function(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value.toLowerCase();
+            const password = document.getElementById('password').value;
+            const hashedPassword = await hashPassword(password);
+
+            if (username === validUsername.toLowerCase() && hashedPassword === validPasswordHash) {
+                const secretLink = window.location.pathname.split('/')[1];
+
+                if (secretLink) {
+                    const decryptedLink = decryptLink(secretLink);
+                    if (decryptedLink) {
+                        window.location.href = decryptedLink;
+                    } else {
+                        document.getElementById('errorMessage').textContent = 'Invalid redirect link.';
+                    }
+                } else {
+                    window.location.href = "https://www.ravenfuture.com";
+                }
+            } else {
+                document.getElementById('errorMessage').textContent = 'Invalid username or password.';
+            }
+        });
+    </script>
+</body>
+</html>
